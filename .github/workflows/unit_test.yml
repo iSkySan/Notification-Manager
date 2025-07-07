@@ -24,74 +24,73 @@ jobs:
           echo 'COVERAGE_REPORT<<EOF' >> $GITHUB_ENV
           cat coverage/coverage.txt >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-          
+
           # Parse list of failed test titles from JSON output
           if [ -f jest-results.json ]; then
-          FAILURES=$(jq -r '.testResults[].assertionResults[] |
-          select(.status=="failed") | "- " + .fullName' jest-results.json
-          | xargs -0)
-          if [ -z "$FAILURES" ]; then
-          FAILURES="None "
-          fi
+            FAILURES=$(jq -r '.testResults[].assertionResults[] |
+            select(.status=="failed") | "- " + .fullName' jest-results.json | xargs -0)
+            if [ -z "$FAILURES" ]; then
+              FAILURES="None "
+            fi
           else
-          FAILURES="Test result file not found!"
+            FAILURES="Test result file not found!"
           fi
-          
+
           echo "FAILED_TESTS<<EOF" >> $GITHUB_ENV
           echo "$FAILURES" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-          
-          THRESHOLDS=$(grep 'coverage threshold' jest.console.txt ||
-          true)
+
+          THRESHOLDS=$(grep 'coverage threshold' jest.console.txt || true)
           if [ -z "$THRESHOLDS" ]; then
-          THRESHOLDS="None"
+            THRESHOLDS="None"
           fi
           echo "COVERAGE_THRESHOLDS<<EOF" >> $GITHUB_ENV
           echo "$THRESHOLDS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-          - name: Comment coverage on PR
-          if: always()
-          uses: actions/github-script@v7
-          with:
-           script: |
-           const coverageReport = process.env.COVERAGE_REPORT;
-           const failedTests = process.env.FAILED_TESTS || "";
-           const thresholds = process.env.COVERAGE_THRESHOLDS || "";
-           const prNumber = context.payload.pull_request.number;
 
-           // Find existing comments by this bot to avoid duplication
-           const { data: comments } = await github.rest.issues.listComments({
-           owner: context.repo.owner,
-           repo: context.repo.repo,
-           issue_number: prNumber,
-           });
+      - name: Comment coverage on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const coverageReport = process.env.COVERAGE_REPORT;
+            const failedTests = process.env.FAILED_TESTS || "";
+            const thresholds = process.env.COVERAGE_THRESHOLDS || "";
+            const prNumber = context.payload.pull_request.number;
 
-           const botComment = comments.find(comment =>
-           comment.user.type === 'Bot' &&
-           comment.body.startsWith('## Jest Report')
-           );
+            // Find existing comments by this bot to avoid duplication
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
 
-           let body = `## Jest Report\n`;
-           body += "```" + coverageReport + "\n```\n";
-           if(failedTests && !failedTests.includes("None")) {
-           body += `### Failed Tests\n${failedTests}\n`;
-           }
-           if(thresholds && !thresholds.includes("None")) {
-           body += `### Coverage Thresholds Not Met\n${thresholds}\n`;
-           }
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.startsWith('## Jest Report')
+            );
 
-           if (botComment) {
-           await github.rest.issues.updateComment({
-           owner: context.repo.owner,
-           repo: context.repo.repo,
-           comment_id: botComment.id,
-           body
-           });
-           } else {
-           await github.rest.issues.createComment({
-           owner: context.repo.owner,
-           repo: context.repo.repo,
-           issue_number: prNumber,
-           body
-           });
-           }
+            let body = `## Jest Report\n`;
+            body += "```" + coverageReport + "\n```\n";
+            if(failedTests && !failedTests.includes("None")) {
+              body += `### Failed Tests\n${failedTests}\n`;
+            }
+            if(thresholds && !thresholds.includes("None")) {
+              body += `### Coverage Thresholds Not Met\n${thresholds}\n`;
+            }
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body
+              });
+            }
