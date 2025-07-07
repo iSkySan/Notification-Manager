@@ -1,0 +1,24 @@
+{
+  "name": "notification_manager",
+  "version": "1.0.0",
+  "main": "build/src/index.ts",
+  "scripts": {
+    "start": "npm run build && node build/src/index.js",
+    "build": "tsc -p .",
+    "test": "jest",
+    "test:report": "jest --outputFile=jest-results.json --json > jest.console.txt 2>&1",
+    "prettier": "prettier --write 'src/**/*.ts'"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.13.13",
+    "jest": "^30.0.2",
+    "ts-jest": "^29.4.0",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+  }
+}
